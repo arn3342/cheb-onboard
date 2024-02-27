@@ -13,238 +13,112 @@ import {
 } from '@chakra-ui/react'
 import SneakerBanner from './assets/sneaker_banner.png'
 import Background from './assets/grad_new.png'
-import sampleObj from './assets/sample_item'
 import { useState } from 'react'
-import { Map, Marker } from '@vis.gl/react-google-maps'
-import MapMarkerIcon from './assets/map_marker.png'
 import axios from 'axios'
+import MapComponent from './components/map'
+import { ButtonStyle, InputStyle } from './components/defaultStyles'
+import StateList from './assets/stateList'
 
-function extractKeyName (key) {
-  if (key.includes('_')) {
-    const init = key.split('_').join(' ')
-    return init.charAt(0).toUpperCase() + init.slice(1)
-  } else return key
+
+const Form_Fields = {
+  'Basic Information': [
+    'First Name',
+    'Last Name',
+    'Contact Email',
+    'Billing Address',
+    {
+      'Billing State': StateList
+    },
+    'Billing Zip'
+  ],
+  'Store Information': [
+    'Store Name',
+    'Store Description',
+    { 'Store Street Address': { lat: 0, lng: 0 } },
+    { 'Store State': StateList },
+    'Store Zip',
+    'Support Email',
+    {
+      'Store Type': [
+        { key: 'store', value: 'Store Owner' },
+        { key: 'reseller', value: 'Independent Reseller' }
+      ]
+    }
+  ]
 }
 
 function generateFields () {
-  const fields = []
+  const _fields = []
 
-  fields.push({ name: 'Basic Information', type: 'label' })
-  Object.keys(sampleObj().seller_information).map(seller_key => {
-    if (typeof sampleObj().seller_information[seller_key] !== 'string') {
-      if (Array.isArray(sampleObj().seller_information[seller_key])) {
-        fields.push({
-          name: seller_key,
-          type: 'select',
-          label: extractKeyName(seller_key),
-          options: sampleObj().seller_information[seller_key]
-        })
-      } else {
-        Object.keys(sampleObj().seller_information[seller_key]).map(
-          child_key => {
-            fields.push({
-              name: child_key,
-              type: 'input',
-              label: extractKeyName(child_key)
-            })
-          }
-        )
-      }
-    } else {
-      fields.push({
-        name: seller_key,
-        type: 'input',
-        label: extractKeyName(seller_key)
-      })
-    }
-  })
+  const _fieldType = fieldObject => {
+    if (Array.isArray(Object.values(fieldObject)[0])) return 'select'
+    else if (
+      Object.values(fieldObject)[0].hasOwnProperty('lat') &&
+      Object.values(fieldObject)[0].hasOwnProperty('lng')
+    )
+      return 'map'
+  }
 
-  fields.push({ name: 'Store Information', type: 'label' })
-  Object.keys(sampleObj().store_information).map(store_key => {
-    if (store_key !== 'store_address') {
-      if (typeof sampleObj().store_information[store_key] !== 'string') {
-        if (Array.isArray(sampleObj().store_information[store_key])) {
-          fields.push({
-            name: store_key,
-            type: 'select',
-            label: extractKeyName(store_key),
-            options: sampleObj().store_information[store_key]
-          })
-        } else {
-          Object.keys(sampleObj().store_information[store_key]).map(
-            child_key => {
-              fields.push({
-                name: child_key,
-                type: 'input',
-                label: extractKeyName(child_key)
-              })
-            }
-          )
-        }
+  Object.keys(Form_Fields).map(parentKey => {
+    _fields.push({ name: parentKey, type: 'label' })
+
+    Form_Fields[parentKey].map(field => {
+      if (typeof field === 'string' || field instanceof String) {
+        _fields.push({ name: field, type: 'input' })
       } else {
-        fields.push({
-          name: store_key,
-          type: 'input',
-          label: extractKeyName(store_key)
+        _fields.push({
+          name: Object.keys(field)[0],
+          type: _fieldType(field),
+          options: _fieldType(field) === 'select' ? Object.values(field)[0] : null
         })
       }
-    } else {
-      fields.push({
-        name: store_key,
-        type: 'map',
-        label: extractKeyName(store_key)
-      })
-    }
+    })
   })
 
-  return fields
+  return _fields
 }
 
 function App () {
   const [formState, setFormState] = useState({})
-  const [currentMapPos, setCurrentMapPos] = useState({
-    lat: 0,
-    lng: 0,
-    isLoading: false
-  })
   const [apiState, setApiState] = useState('idle')
   const [isLargerThan1200] = useMediaQuery('(min-width: 1200px)')
 
-  const inputStyle = keyName => ({
-    bg: '#2D84B840',
-    size: 'md',
-    outline: 'none',
-    boxShadow: 'none',
-    borderColor: 'transparent'
-  })
-
-  const buttonStyle = {
-    size: 'md',
-    w: 'full',
-    transition: 'all 300ms',
-    bg: 'white',
-    color: 'black',
-    _hover: {
-      bg: 'black',
-      color: 'white'
-    },
-    dropShadow: 'lg',
-    inverted: {
-      bg: 'black',
-      color: 'white',
-      _hover: {
-        bg: 'white',
-        color: 'black'
-      }
-    }
-  }
-
-  function getExactLocation () {
-    setCurrentMapPos(prev => ({ ...prev, isLoading: true }))
-    const options = {
-      enableHighAccuracy: true,
-      timeout: 5000,
-      maximumAge: 0
-    }
-
-    const success = pos => {
-      const crd = pos.coords
-      setCurrentMapPos({
-        lat: crd.latitude,
-        lng: crd.longitude,
-        isLoading: false
-      })
-    }
-    const error = err =>
-      setCurrentMapPos(prev => ({ ...prev, isLoading: false }))
-
-    navigator.geolocation.getCurrentPosition(success, error, options)
-  }
-
   const renderChild = data => {
+    const state_key_name = data.name.toLowerCase().replace(' ', '_')
     const child_types = {
       input: (
         <Input
           key={data.name}
-          placeholder={data.label}
+          placeholder={data.name}
           value={formState[data?.name]}
           onChange={e =>
-            setFormState(prev => ({ ...prev, [data.name]: e.target.value }))
+            setFormState(prev => ({ ...prev, [state_key_name]: e.target.value }))
           }
           autoComplete='off'
-          {...inputStyle(data.name)}
+          {...InputStyle}
         />
       ),
       map: (
-        <Box pos='relative' h='300px' w='full'>
-          {currentMapPos.lat == 0 && (
-            <VStack
-              pos='absolute'
-              h='full'
-              w='full'
-              bg='#00000080'
-              zIndex={'9'}
-              justify='center'
-              align='center'
-            >
-              <Button
-                {...buttonStyle.inverted}
-                w='max-content'
-                onClick={getExactLocation}
-                isLoading={currentMapPos.isLoading}
-                loadingText='Getting location'
-              >
-                Set Location On Map
-              </Button>
-            </VStack>
-          )}
-          <Map
-            center={currentMapPos}
-            onCenterChanged={ev => {
-              setCurrentMapPos({
-                lat: ev.map.getCenter().lat(),
-                lng: ev.map.getCenter().lng()
-              })
-
-              setFormState(prev => ({
-                ...prev,
-                store_address: {
-                  lat: ev.map.getCenter().lat(),
-                  lng: ev.map.getCenter().lng()
-                }
-              }))
-            }}
-            defaultZoom={16}
-            gestureHandling={'greedy'}
-            disableDefaultUI={true}
-            style={{ height: '300px' }}
-          >
-            <Marker
-              position={formState.store_address || currentMapPos}
-              draggable={true}
-              icon={{
-                url: MapMarkerIcon
-              }}
-              onDragEnd={ev =>
-                setFormState(prev => ({
-                  ...prev,
-                  store_address: {
-                    lat: ev.latLng.lat(),
-                    lng: ev.latLng.lng()
-                  }
-                }))
+        <MapComponent
+          defaultValue={formState.store_address}
+          onChangeLocation={({ lat, lng }) =>
+            setFormState(prev => ({
+              ...prev,
+              store_address: {
+                lat: lat,
+                lng: lng
               }
-            />
-          </Map>
-        </Box>
+            }))
+          }
+        />
       ),
       label: <Text fontSize='medium'>{data.name}</Text>,
       select: (
         <Select
-          {...inputStyle()}
-          placeholder={`Select ${data.label}`}
+          {...InputStyle}
+          placeholder={`Select ${data.name}`}
           onChange={e =>
-            setFormState(prev => ({ ...prev, [data.name]: e.target.value }))
+            setFormState(prev => ({ ...prev, [state_key_name]: e.target.value }))
           }
           value={formState[data?.name]}
         >
@@ -261,13 +135,14 @@ function App () {
   }
 
   async function submitForm () {
-    setApiState('pending')
-    axios
-      .post('https://backend.sheehanrahman.com/api/cheb', {
-        sellerData: formState
-      })
-      .then(res => res.status == 200 && setApiState('success'))
-      .catch(res => setApiState('error'))
+   console.log('Form result:', formState)
+    // setApiState('pending')
+    // axios
+    //   .post('https://backend.sheehanrahman.com/api/cheb', {
+    //     sellerData: formState
+    //   })
+    //   .then(res => res.status == 200 && setApiState('success'))
+    //   .catch(res => setApiState('error'))
   }
 
   return (
@@ -343,7 +218,7 @@ function App () {
         >
           <VStack w='full' h='full' justify='center'>
             <Button
-              {...buttonStyle}
+              {...ButtonStyle}
               onClick={submitForm}
               isDisabled={
                 Object.keys(formState).length < generateFields().length - 2
