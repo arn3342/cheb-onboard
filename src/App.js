@@ -135,14 +135,13 @@ function App () {
   }
 
   async function submitForm () {
-   console.log('Form result:', formState)
-    // setApiState('pending')
-    // axios
-    //   .post('https://backend.sheehanrahman.com/api/cheb', {
-    //     sellerData: formState
-    //   })
-    //   .then(res => res.status == 200 && setApiState('success'))
-    //   .catch(res => setApiState('error'))
+    setApiState('pending')
+    axios
+      .post('https://backend.sheehanrahman.com/api/cheb', {
+        sellerData: formState
+      })
+      .then(res => res.status == 200 && setApiState('success'))
+      .catch(res => setApiState('error'))
   }
 
   return (
