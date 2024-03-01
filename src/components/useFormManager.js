@@ -52,7 +52,7 @@ const Buyer_Fields = {
     },
     'Billing Zip'
   ],
-  'Your interests': [
+  'Choose Your interests': [
     {
       'Brands you like': {
         isMultiSelect: true,

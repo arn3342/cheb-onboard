@@ -43,9 +43,16 @@ function App () {
   const [isLargerThan1000] = useMediaQuery('(min-width: 1000px)')
   const [formType, setFormType] = useState()
 
+  function getMainHeight () {
+    if (isLargerThan1000) return 'full'
+    if (!formType) return 'full'
+    else return 'fit-content !important'
+  }
+
   return (
     <Box
-      h='full'
+      id='main_app'
+      h={getMainHeight()}
       w='full'
       bgImage={Background}
       bgRepeat='no-repeat'

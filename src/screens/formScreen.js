@@ -19,7 +19,7 @@ import { ButtonStyle } from '../components/defaultStyles'
  * @returns
  */
 const FormScreen = ({ formType }) => {
-  const [isLargerThan1200] = useMediaQuery('(min-width: 1200px)')
+  const [isLargerThan1000] = useMediaQuery('(min-width: 1000px)')
   const { renderForm, submitForm, formApiState, isFormValid, content } =
     useFormManager({
       formType: formType
@@ -27,10 +27,17 @@ const FormScreen = ({ formType }) => {
 
   return (
     <Grid
-      gridTemplateColumns={isLargerThan1200 ? '1fr 1fr' : '1fr'}
-      maxH='full'
+      gridTemplateColumns={isLargerThan1000 ? '1fr 1fr' : '1fr'}
+      maxH={isLargerThan1000 ? 'full' : 'fit-content'}
     >
-      <GridItem p='10' maxH='100%' overflowY='scroll' pos='relative'>
+      <GridItem
+        p='10'
+        pb={isLargerThan1000 ? '10' : 0}
+        px={isLargerThan1000 ? '10' : 0}
+        maxH='100%'
+        overflowY='scroll'
+        pos='relative'
+      >
         <VStack
           w='full'
           h='full'
@@ -39,14 +46,25 @@ const FormScreen = ({ formType }) => {
           color='white'
           maxH='full'
         >
-          <Text fontSize='xx-large' fontWeight='bold'>
+          <Text
+            fontSize={isLargerThan1000 ? 'xx-large' : 'lg'}
+            fontWeight='bold'
+          >
             {content.title}
           </Text>
-          <Text fontSize='5xl' fontWeight='black'>
+          <Text
+            fontSize={isLargerThan1000 ? '5xl' : 'xx-large'}
+            fontWeight='black'
+          >
             {content.subTitle}
           </Text>
           <Box h='5' />
-          <Text bg='#2D84B840' px='3' py='3'>
+          <Text
+            bg='#2D84B840'
+            px='3'
+            py='3'
+            fontSize={isLargerThan1000 ? 'md' : 'sm'}
+          >
             CheB is a DoorDash like sneaker marketplace that aims to help and
             scale local sneaker stores, with the joint-forces of blockchain and
             crypto!
@@ -58,9 +76,22 @@ const FormScreen = ({ formType }) => {
             align='flex-start'
             spacing='2'
             h='fit-content'
-            pb='160px'
+            pb={isLargerThan1000 ? '160px' : 0}
           >
             {renderForm()}
+            {!isLargerThan1000 && formApiState !== 'success' && (
+              <VStack w='full' justify='center' pt='10'>
+                <Button
+                  {...ButtonStyle}
+                  onClick={submitForm}
+                  isDisabled={!isFormValid}
+                  isLoading={formApiState === 'pending'}
+                  loadingText='Submitting...'
+                >
+                  Join Waitlist
+                </Button>
+              </VStack>
+            )}
             {formApiState === 'success' && (
               <Text
                 bgGradient={'linear(to-br, #e309dc60, #0960e3)'}
@@ -78,17 +109,17 @@ const FormScreen = ({ formType }) => {
           </VStack>
         </VStack>
       </GridItem>
-      {isLargerThan1200 && (
+      {isLargerThan1000 && (
         <GridItem>
           <Image h='full' w='full' src={SneakerBanner} objectFit='contain' />
         </GridItem>
       )}
-      {formApiState !== 'success' && (
+      {isLargerThan1000 && formApiState !== 'success' && (
         <VStack
           h='130px'
-          pos='absolute'
+          pos={'absolute'}
           bottom='0'
-          w={isLargerThan1200 ? '50%' : 'full'}
+          w={isLargerThan1000 ? '50%' : 'full'}
           justify='center'
           px='10'
           bgGradient='linear(to-t, #151F90, #0c5b8d10)'
