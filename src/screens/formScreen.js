@@ -189,6 +189,7 @@ const FormScreen = ({ formType, firebaseApp }) => {
         }))
       }
       injectContent(sneaker_data)
+      setIsUploadModalOpen(false)
     } catch (ex) {}
     setModalUploading(false)
     // return imageRes
