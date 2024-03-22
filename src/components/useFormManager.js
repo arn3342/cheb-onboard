@@ -93,9 +93,12 @@ const useFormManager = ({ formType }) => {
   const content = _contents[formType]
 
   useEffect(() => {
+    const requiredFields = generateFields().filter(
+      x => x.type !== 'label'
+    ).length
     setIsFormValid(
-      Object.keys(formState).length ==
-        generateFields().filter(x => x.type !== 'label').length &&
+      (Object.keys(formState).length == requiredFields ||
+        Object.keys(formState).length > requiredFields) &&
         !StringHelper.hasEmptyNestedProperties(formState)
     )
   }, [formState])
@@ -125,7 +128,6 @@ const useFormManager = ({ formType }) => {
         if (typeof field === 'string' || field instanceof String) {
           _fields.push({ name: field, type: 'input' })
         } else {
-          console.log('Found field:', field)
           _fields.push({
             name: Object.keys(field)[0],
             type: _fieldType(field),
@@ -140,7 +142,6 @@ const useFormManager = ({ formType }) => {
       })
     })
 
-    console.log('Fields are:', _fields)
     return _fields
   }
 
@@ -213,6 +214,7 @@ const useFormManager = ({ formType }) => {
   }
 
   async function submitForm () {
+    console.log('Form is:', formState)
     setApiState('pending')
     const data = {}
     if (formType === 'seller') data.sellerData = formState
@@ -231,12 +233,17 @@ const useFormManager = ({ formType }) => {
     }
   }
 
+  function injectContent (newObject) {
+    setFormState(prev => ({ ...prev, ...newObject }))
+  }
+
   return {
     renderForm,
     submitForm,
     formApiState: apiState,
     isFormValid,
-    content
+    content,
+    injectContent
   }
 }
 
