@@ -24,7 +24,6 @@ export const StringHelper = {
         if (Array.isArray(obj[prop])) {
           return obj[prop].length <= 0
         } else if (Object.keys(obj[prop]).length > 0) {
-          console.log('Checking nested...', obj[prop])
           return Object.keys(obj[prop]).some(nestedKey =>
             this.isEmpty(obj[prop][nestedKey])
           )
